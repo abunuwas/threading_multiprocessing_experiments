@@ -1,4 +1,4 @@
-import multiprocessing
+from multiprocessing import Process
 import os
 import re
 
@@ -12,7 +12,7 @@ def run_processes():
     texts = list_texts(path)
     
     for text in texts:
-        process = multiprocessing.Process(target=find_pattern, args=(pattern, text))
+        process = Process(target=find_pattern, args=(pattern, text))
         jobs.append(process)
 
     for j in jobs:
