@@ -1,5 +1,6 @@
 import multiprocessing
 import os
+import re
 
 from text_analysis import list_texts, find_pattern
 
