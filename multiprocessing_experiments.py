@@ -1,5 +1,5 @@
 import multiprocessing as mp
-from multiprocessing import Process, Pipe, Array
+from multiprocessing import Process, Pipe, Array, Manager
 
 import os
 import re
@@ -68,11 +68,12 @@ if __name__ == '__main__':
     texts = list_texts(os.path.join(os.getcwd(), 'texts'))
     freq_words_per_text = {}
     jobs = []
-    container = {}
-    
-    for text in texts:
-        process = Process(target=shared_dict, args=(text, container))
-        jobs.append(process)
+
+    with Manager() as manager:
+        container = manager.dict()
+        for text in texts:
+            process = Process(target=shared_dict, args=(text, container))
+            jobs.append(process)
 
 ##       parent_conn, child_conn = Pipe()
 ##       q = mp.Queue()
@@ -80,15 +81,15 @@ if __name__ == '__main__':
 ##       jobs.append(process)
 
 
-    for j in jobs:
-        j.start()
+        for j in jobs:
+            j.start()
 
-    for j in jobs:
-        j.join()
+        for j in jobs:
+            j.join()
 
-    print('Finished processing texts')
+        print('Finished processing texts')
 
-    print(len(container))
+        print(len(container))
         
 
 
