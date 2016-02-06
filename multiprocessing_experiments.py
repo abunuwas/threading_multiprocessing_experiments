@@ -1,5 +1,5 @@
 import multiprocessing as mp
-from multiprocessing import Process, Pipe
+from multiprocessing import Process, Pipe, Array
 
 import os
 import re
@@ -39,6 +39,15 @@ def send_data(conn, title, freqs):
     conn.send({title: freqs})
     conn.close()
 
+def send_queue(q):
+    pass
+
+def shared_dict(text, container):
+    title = os.path.basename(text)
+    container[title] = getFreqWordsFromText(text, 1)
+    print(container)
+
+
 
 if __name__ == '__main__':
 ##    info('main line')
@@ -59,15 +68,27 @@ if __name__ == '__main__':
     texts = list_texts(os.path.join(os.getcwd(), 'texts'))
     freq_words_per_text = {}
     jobs = []
+    container = {}
     
     for text in texts:
-##        parent_conn, child_conn = Pipe()
-        q = mp.Queue()
-        process = Process(target=getFreqWordsFromText, args=(text, 1))
+        process = Process(target=shared_dict, args=(text, container))
         jobs.append(process)
+
+##       parent_conn, child_conn = Pipe()
+##       q = mp.Queue()
+##       process = Process(target=getFreqWordsFromText, args=(text, 1))
+##       jobs.append(process)
+
 
     for j in jobs:
         j.start()
+
+    for j in jobs:
+        j.join()
+
+    print('Finished processing texts')
+
+    print(len(container))
         
 
 
