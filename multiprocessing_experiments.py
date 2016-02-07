@@ -29,8 +29,10 @@ def getFreqWordsFromText(text, num):
     freqs = get_freq_words(words, num)
     return freqs
 
-def send_data(conn, title, freqs):
-    conn.send({title: freqs})
+def send_pipe(text, conn):
+    title = os.path.basename(text)
+    freqs = getFreqWordsFromText(text, 1)
+    conn.send((title, freqs))
     conn.close()
 
 def send_queue(text, q):
@@ -58,6 +60,25 @@ if __name__ == '__main__':
     texts = list_texts(os.path.join(os.getcwd(), 'texts'))
 
     jobs = []
+    parent_conn, child_conn = Pipe()
+    for text in texts:
+        process = Process(target=send_pipe, args=(text, child_conn))
+        jobs.append(process)
+
+    for j in jobs:
+        j.start()
+
+    for j in jobs:
+        j.join()
+
+    results = [parent_conn.recv() for j in jobs]
+    print('Finished processing texts with Pipe')
+    print('Pipe returned {} results'.format(len(results)))
+    for r in results:
+        print(r)
+
+
+    jobs = []
     with Manager() as manager:
         container = manager.dict()
         for text in texts:
@@ -70,8 +91,7 @@ if __name__ == '__main__':
         for j in jobs:
             j.join()
 
-        print('Finished processing texts')
-
+        print('Finished processing texts with manager.dict')
         print('manager.dict returned ', len(container), 'results')
 
     jobs = []
