@@ -5,6 +5,8 @@ import os
 import re
 from collections import Counter
 
+import timeit
+
 from text_analysis import list_texts, open_file, get_words
 
 
@@ -41,15 +43,9 @@ def freqsPerText(text):
     return (title, freqs)
 
 
-if __name__ == '__main__':
-    parent_conn, child_conn = Pipe()
-    p = Process(target=f2, args=(child_conn,))
-    p.start()
-    print(parent_conn.recv())
-    p.join()
+texts = list_texts(os.path.join(os.getcwd(), 'texts'))
 
-    texts = list_texts(os.path.join(os.getcwd(), 'texts'))
-
+def multiprocess_pipe():
     jobs = []
     parent_conn, child_conn = Pipe()
     for text in texts:
@@ -65,10 +61,9 @@ if __name__ == '__main__':
     results = [parent_conn.recv() for j in jobs]
     print('Finished processing texts with Pipe')
     print('Pipe returned {} results'.format(len(results)))
-    for r in results:
-        print(r)
+    return results
 
-
+def multiprocess_manager():
     jobs = []
     with Manager() as manager:
         container = manager.dict()
@@ -85,6 +80,9 @@ if __name__ == '__main__':
         print('Finished processing texts with manager.dict')
         print('manager.dict returned ', len(container), 'results')
 
+        return container
+
+def multiprocess_queue():
     jobs = []
     q = mp.Queue()
     for text in texts:
@@ -100,21 +98,45 @@ if __name__ == '__main__':
     results = [q.get() for j in jobs]
     print('Finished processing texts que Queue')
     print('Queue returned ', len(results), 'results')
+    return results
 
-
+def multiprocess_pool_sync():
     jobs = []
     pool = Pool(processes=10)
     results = [pool.apply(func=freqsPerText, args=(text,)) for text in texts]
     print('Finished processing texts with Pool')
     print('Pool returned ', len(results), 'results')
+    return results
 
-
+def multiprocess_pool_async():
     jobs = []
     pool = Pool(processes=10)
     results = [pool.apply_async(func=freqsPerText, args=(text,)) for text in texts]
     output = [p.get() for p in results]
     print('Finished processing texts with Pool async')
     print('Pool async returned ', len(output), 'results')
+    return output
+
+
+if __name__ == '__main__':
+    print(timeit.timeit('multiprocess_pipe()', setup='from __main__ import multiprocess_pipe', number=1))
+    print(timeit.timeit('multiprocess_manager()', setup='from __main__ import multiprocess_manager', number=1))
+    print(timeit.timeit('multiprocess_queue()', setup='from __main__ import multiprocess_queue',number=1))
+    print(timeit.timeit('multiprocess_pool_sync()', setup='from __main__ import multiprocess_pool_sync', number=1))
+    print(timeit.timeit('multiprocess_pool_async()', setup='from __main__ import multiprocess_pool_async', number=1))
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
         
