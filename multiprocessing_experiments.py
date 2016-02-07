@@ -101,6 +101,9 @@ def multiprocess_queue():
     return results
 
 def multiprocess_pool_sync():
+    # In this function the apply() method creates a lock that prevents more than the specified number of
+    # processes to take place at the same time. In this case, only 10 processes can be active at the same
+    # time.
     jobs = []
     pool = Pool(processes=10)
     results = [pool.apply(func=freqsPerText, args=(text,)) for text in texts]
