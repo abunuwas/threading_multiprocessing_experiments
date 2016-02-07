@@ -8,18 +8,6 @@ from collections import Counter
 from text_analysis import list_texts, open_file, get_words
 
 
-def f(name):
-    info('function f')
-    print('hello', name)
-
-def foo(q):
-    q.put('hello')
-
-def f2(conn):
-    conn.send([42, None, 'hello'])
-    conn.close()
-
-
 def get_freq_words(words, num):
     return Counter(words).most_common(num)
 
@@ -29,24 +17,27 @@ def getFreqWordsFromText(text, num):
     freqs = get_freq_words(words, num)
     return freqs
 
-def send_pipe(text, conn):
+def getTitleFreqs(text, num):
     title = os.path.basename(text)
     freqs = getFreqWordsFromText(text, 1)
+    return (title, freqs)
+
+
+def send_pipe(text, conn):
+    title, freqs = getTitleFreqs(text, 1)
     conn.send((title, freqs))
     conn.close()
 
 def send_queue(text, q):
-    title = os.path.basename(text)
-    freqs = getFreqWordsFromText(text, 1)
+    title, freqs = getTitleFreqs(text, 1)
     q.put((title, freqs))
 
 def shared_dict(text, container):
-    title = os.path.basename(text)
-    container[title] = getFreqWordsFromText(text, 1)
+    title, freqs = getTitleFreqs(text, 1)
+    container[title] = freqs
 
 def freqsPerText(text):
-    title = os.path.basename(text)
-    freqs = getFreqWordsFromText(text, 1)
+    title, freqs = getTitleFreqs(text, 1)
     return (title, freqs)
 
 
