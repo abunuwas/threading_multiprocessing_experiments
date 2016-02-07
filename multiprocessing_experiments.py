@@ -1,5 +1,5 @@
 import multiprocessing as mp
-from multiprocessing import Process, Pipe, Array, Manager
+from multiprocessing import Process, Pipe, Array, Manager, Pool
 
 import os
 import re
@@ -7,12 +7,6 @@ from collections import Counter
 
 from text_analysis import list_texts, open_file, get_words
 
-
-def info(title):
-    print(title)
-    print('module name:', __name__)
-    print('parent process:', os.getppid())
-    print('process id:', os.getpid())
 
 def f(name):
     info('function f')
@@ -48,6 +42,10 @@ def shared_dict(text, container):
     title = os.path.basename(text)
     container[title] = getFreqWordsFromText(text, 1)
 
+def freqsPerText(text):
+    title = os.path.basename(text)
+    freqs = getFreqWordsFromText(text, 1)
+    return (title, freqs)
 
 
 if __name__ == '__main__':
@@ -58,7 +56,6 @@ if __name__ == '__main__':
     p.join()
 
     texts = list_texts(os.path.join(os.getcwd(), 'texts'))
-    freq_words_per_text = {}
 
     jobs = []
     with Manager() as manager:
@@ -77,21 +74,36 @@ if __name__ == '__main__':
 
         print('manager.dict returned ', len(container), 'results')
 
-jobs = []
-q = mp.Queue()
-for text in texts:
-    process = Process(target=send_queue, args=(text, q))
-    jobs.append(process)
+    jobs = []
+    q = mp.Queue()
+    for text in texts:
+        process = Process(target=send_queue, args=(text, q))
+        jobs.append(process)
 
-for j in jobs:
-    j.start()
+    for j in jobs:
+        j.start()
 
-for j in jobs:
-    j.join()
+    for j in jobs:
+        j.join()
 
-results = [q.get() for j in jobs]
-print('Finished processing texts')
-print('Queue returned ', len(results), 'results')
+    results = [q.get() for j in jobs]
+    print('Finished processing texts que Queue')
+    print('Queue returned ', len(results), 'results')
+
+
+    jobs = []
+    pool = Pool(processes=10)
+    results = [pool.apply(func=freqsPerText, args=(text,)) for text in texts]
+    print('Finished processing texts with Pool')
+    print('Pool returned ', len(results), 'results')
+
+
+    jobs = []
+    pool = Pool(processes=10)
+    results = [pool.apply_async(func=freqsPerText, args=(text,)) for text in texts]
+    output = [p.get() for p in results]
+    print('Finished processing texts with Pool async')
+    print('Pool async returned ', len(output), 'results')
 
 
         
